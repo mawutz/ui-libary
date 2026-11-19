@@ -1,6 +1,6 @@
---// MODERN RED-BLACK-PURPLE UI LIBRARY (UNIVERSAL MOBILE & PC)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService") -- [1] TAMBAHAN: untuk update bar loading per frame
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 
@@ -72,6 +72,8 @@ function Library:CreateWindow(Config)
     local VersionText = Config.Version or "v1.0"
     local AuthorText = Config.Author or "Developer"
     local LogoId = Config.Logo or "rbxassetid://7733960981"
+    local CatIconId = Config.CatIcon or "rbxassetid://7733964719" -- [2] TAMBAHAN: ID ikon kucing
+    local LoadDuration = Config.LoadTime or 3 -- [2] TAMBAHAN: durasi loading (detik)
 
     -- Hapus UI lama jika di-execute ulang
     local ParentGui = GetSafeParent()
@@ -92,6 +94,7 @@ function Library:CreateWindow(Config)
     ToggleLogo.Position = UDim2.new(0.05, 0, 0.15, 0)
     ToggleLogo.BackgroundColor3 = Theme.Background
     ToggleLogo.Image = LogoId
+    ToggleLogo.Visible = false -- [2] TAMBAHAN: sembunyikan saat loading
     ToggleLogo.Parent = ScreenGui
 
     local LogoCorner = Instance.new("UICorner", ToggleLogo)
@@ -128,6 +131,7 @@ function Library:CreateWindow(Config)
     MainFrame.Position = UDim2.new(0.5, -270, 0.5, -175)
     MainFrame.BackgroundColor3 = Theme.Background
     MainFrame.ClipsDescendants = true
+    MainFrame.Visible = false -- [2] TAMBAHAN: sembunyikan sampai bar loading penuh
     MainFrame.Parent = ScreenGui
 
     -- UIScale otomatis untuk layar HP kecil
@@ -154,6 +158,165 @@ function Library:CreateWindow(Config)
         ColorSequenceKeypoint.new(0, Theme.Red),
         ColorSequenceKeypoint.new(1, Theme.Purple)
     })
+
+    --// [3] TAMBAHAN: LOADING SCREEN ([logo] [judul/pembuat] -> [kucing lompat] -> [bar loading])
+    local LoadingFrame = Instance.new("Frame")
+    LoadingFrame.Name = "LoadingFrame"
+    LoadingFrame.Size = UDim2.new(0, 360, 0, 195)
+    LoadingFrame.Position = UDim2.new(0.5, -180, 0.5, -97.5)
+    LoadingFrame.BackgroundColor3 = Theme.Background
+    LoadingFrame.Parent = ScreenGui
+
+    local LoadScale = Instance.new("UIScale", LoadingFrame)
+    local function UpdateLoadScale()
+        local viewport = workspace.CurrentCamera.ViewportSize
+        if viewport.X < 500 then
+            LoadScale.Scale = math.clamp(viewport.X / 420, 0.72, 1)
+        else
+            LoadScale.Scale = 1
+        end
+    end
+    UpdateLoadScale()
+    workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateLoadScale)
+
+    Instance.new("UICorner", LoadingFrame).CornerRadius = UDim.new(0, 12)
+
+    local LoadStroke = Instance.new("UIStroke", LoadingFrame)
+    LoadStroke.Thickness = 1.8
+    LoadStroke.Color = Color3.new(1,1,1)
+    local LoadBorderGrad = Instance.new("UIGradient", LoadStroke)
+    LoadBorderGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.Red),
+        ColorSequenceKeypoint.new(1, Theme.Purple)
+    })
+
+    -- [logo] [judul / nama pembuatnya]
+    local LoadHeader = Instance.new("Frame")
+    LoadHeader.Size = UDim2.new(1, -32, 0, 46)
+    LoadHeader.Position = UDim2.new(0, 16, 0, 14)
+    LoadHeader.BackgroundTransparency = 1
+    LoadHeader.Parent = LoadingFrame
+
+    local LoadLogo = Instance.new("ImageLabel")
+    LoadLogo.Size = UDim2.new(0, 42, 0, 42)
+    LoadLogo.Position = UDim2.new(0, 0, 0, 2)
+    LoadLogo.BackgroundColor3 = Theme.Secondary
+    LoadLogo.Image = LogoId
+    LoadLogo.Parent = LoadHeader
+    Instance.new("UICorner", LoadLogo).CornerRadius = UDim.new(1, 0)
+    local LoadLogoStroke = Instance.new("UIStroke", LoadLogo)
+    LoadLogoStroke.Thickness = 1.5
+    LoadLogoStroke.Color = Theme.Red
+
+    local LoadTitle = Instance.new("TextLabel")
+    LoadTitle.Size = UDim2.new(1, -54, 0, 22)
+    LoadTitle.Position = UDim2.new(0, 52, 0, 2)
+    LoadTitle.BackgroundTransparency = 1
+    LoadTitle.Text = TitleText
+    LoadTitle.Font = Enum.Font.GothamBold
+    LoadTitle.TextSize = 15
+    LoadTitle.TextColor3 = Theme.Text
+    LoadTitle.TextXAlignment = Enum.TextXAlignment.Left
+    LoadTitle.Parent = LoadHeader
+
+    local LoadAuthor = Instance.new("TextLabel")
+    LoadAuthor.Size = UDim2.new(1, -54, 0, 18)
+    LoadAuthor.Position = UDim2.new(0, 52, 0, 24)
+    LoadAuthor.BackgroundTransparency = 1
+    LoadAuthor.Text = "by " .. AuthorText
+    LoadAuthor.Font = Enum.Font.Gotham
+    LoadAuthor.TextSize = 12
+    LoadAuthor.TextColor3 = Theme.SubText
+    LoadAuthor.TextXAlignment = Enum.TextXAlignment.Left
+    LoadAuthor.Parent = LoadHeader
+
+    -- [ikon kucing melompat lompat]
+    local CatStage = Instance.new("Frame")
+    CatStage.Size = UDim2.new(1, -32, 0, 62)
+    CatStage.Position = UDim2.new(0, 16, 0, 68)
+    CatStage.BackgroundTransparency = 1
+    CatStage.Parent = LoadingFrame
+
+    local CatIcon = Instance.new("ImageLabel")
+    CatIcon.Name = "JumpingCat"
+    CatIcon.Size = UDim2.new(0, 42, 0, 42)
+    CatIcon.Position = UDim2.new(0.5, -21, 0.5, -16)
+    CatIcon.BackgroundTransparency = 1
+    CatIcon.Image = CatIconId
+    CatIcon.Parent = CatStage
+
+    -- [bar loding]
+    local BarBg = Instance.new("Frame")
+    BarBg.Name = "ProgressBarBg"
+    BarBg.Size = UDim2.new(1, -32, 0, 14)
+    BarBg.Position = UDim2.new(0, 16, 1, -46)
+    BarBg.BackgroundColor3 = Theme.Secondary
+    BarBg.Parent = LoadingFrame
+    Instance.new("UICorner", BarBg).CornerRadius = UDim.new(1, 0)
+    Instance.new("UIStroke", BarBg).Color = Theme.Border
+
+    local BarFill = Instance.new("Frame")
+    BarFill.Name = "ProgressBarFill"
+    BarFill.Size = UDim2.new(0, 0, 1, 0)
+    BarFill.BackgroundColor3 = Color3.new(1, 1, 1)
+    BarFill.Parent = BarBg
+    Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
+
+    local BarGrad = Instance.new("UIGradient", BarFill)
+    BarGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Theme.Red),
+        ColorSequenceKeypoint.new(1, Theme.Purple)
+    })
+
+    local StatusText = Instance.new("TextLabel")
+    StatusText.Size = UDim2.new(1, -32, 0, 16)
+    StatusText.Position = UDim2.new(0, 16, 1, -26)
+    StatusText.BackgroundTransparency = 1
+    StatusText.Text = "Memuat aset... 0%"
+    StatusText.Font = Enum.Font.GothamSemibold
+    StatusText.TextSize = 11
+    StatusText.TextColor3 = Theme.SubText
+    StatusText.Parent = LoadingFrame
+
+    local isLoading = true
+    task.spawn(function()
+        while isLoading do
+            local jumpUp = TweenService:Create(
+                CatIcon,
+                TweenInfo.new(0.24, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                { Position = UDim2.new(0.5, -21, 0.5, -34), Rotation = -12 }
+            )
+            jumpUp:Play()
+            jumpUp.Completed:Wait()
+            if not isLoading then break end
+
+            local jumpDown = TweenService:Create(
+                CatIcon,
+                TweenInfo.new(0.24, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out),
+                { Position = UDim2.new(0.5, -21, 0.5, -14), Rotation = 10 }
+            )
+            jumpDown:Play()
+            jumpDown.Completed:Wait()
+        end
+    end)
+
+    local elapsed = 0
+    while elapsed < LoadDuration do
+        local dt = RunService.RenderStepped:Wait()
+        elapsed += dt
+        local progress = math.clamp(elapsed / LoadDuration, 0, 1)
+        BarFill.Size = UDim2.new(progress, 0, 1, 0)
+        StatusText.Text = string.format("Memuat UI... %d%%", math.floor(progress * 100))
+    end
+
+    BarFill.Size = UDim2.new(1, 0, 1, 0)
+    StatusText.Text = "Selesai! 100%"
+    task.wait(0.2)
+    isLoading = false
+
+    LoadingFrame:Destroy()
+    MainFrame.Visible = true
+    ToggleLogo.Visible = true
 
     -- Toggle Buka/Tutup UI dari Logo
     local UIVisible = true
