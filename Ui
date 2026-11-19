@@ -1,6 +1,7 @@
+--// MODERN RED-BLACK-PURPLE UI LIBRARY + JUMPING CAT LOADER (UNIVERSAL MOBILE & PC)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService") -- [1] TAMBAHAN: untuk update bar loading per frame
+local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 
@@ -20,7 +21,9 @@ local Theme = {
 
 -- Fungsi Helper Animasi
 local function Tween(obj, props, duration)
-    TweenService:Create(obj, TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
+    local t = TweenService:Create(obj, TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props)
+    t:Play()
+    return t
 end
 
 -- Fungsi Helper Dragging (Support Mobile Touch & PC Mouse)
@@ -72,8 +75,8 @@ function Library:CreateWindow(Config)
     local VersionText = Config.Version or "v1.0"
     local AuthorText = Config.Author or "Developer"
     local LogoId = Config.Logo or "rbxassetid://7733960981"
-    local CatIconId = Config.CatIcon or "rbxassetid://7733964719" -- [2] TAMBAHAN: ID ikon kucing
-    local LoadDuration = Config.LoadTime or 3 -- [2] TAMBAHAN: durasi loading (detik)
+    local CatIconId = Config.CatIcon or "rbxassetid://7733771880"
+    local LoadTime = Config.LoadTime or 3
 
     -- Hapus UI lama jika di-execute ulang
     local ParentGui = GetSafeParent()
@@ -87,14 +90,14 @@ function Library:CreateWindow(Config)
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.Parent = ParentGui
 
-    --// TOMBOL LOGO MELAYANG (BUKA / TUTUP UI)
+    --// TOMBOL LOGO MELAYANG (BUKA / TUTUP UI) - MUNCUL SETELAH LOADING SELESAI
     local ToggleLogo = Instance.new("ImageButton")
     ToggleLogo.Name = "FloatingLogo"
     ToggleLogo.Size = UDim2.new(0, 48, 0, 48)
     ToggleLogo.Position = UDim2.new(0.05, 0, 0.15, 0)
     ToggleLogo.BackgroundColor3 = Theme.Background
     ToggleLogo.Image = LogoId
-    ToggleLogo.Visible = false -- [2] TAMBAHAN: sembunyikan saat loading
+    ToggleLogo.Visible = false
     ToggleLogo.Parent = ScreenGui
 
     local LogoCorner = Instance.new("UICorner", ToggleLogo)
@@ -102,7 +105,7 @@ function Library:CreateWindow(Config)
 
     local LogoStroke = Instance.new("UIStroke", ToggleLogo)
     LogoStroke.Thickness = 2
-    LogoStroke.Color = Color3.new(1,1,1)
+    LogoStroke.Color = Color3.new(1, 1, 1)
 
     local LogoGradient = Instance.new("UIGradient", LogoStroke)
     LogoGradient.Color = ColorSequence.new({
@@ -131,7 +134,7 @@ function Library:CreateWindow(Config)
     MainFrame.Position = UDim2.new(0.5, -270, 0.5, -175)
     MainFrame.BackgroundColor3 = Theme.Background
     MainFrame.ClipsDescendants = true
-    MainFrame.Visible = false -- [2] TAMBAHAN: sembunyikan sampai bar loading penuh
+    MainFrame.Visible = false
     MainFrame.Parent = ScreenGui
 
     -- UIScale otomatis untuk layar HP kecil
@@ -152,171 +155,12 @@ function Library:CreateWindow(Config)
 
     local MainStroke = Instance.new("UIStroke", MainFrame)
     MainStroke.Thickness = 1.8
-    MainStroke.Color = Color3.new(1,1,1)
+    MainStroke.Color = Color3.new(1, 1, 1)
     local MainGrad = Instance.new("UIGradient", MainStroke)
     MainGrad.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Theme.Red),
         ColorSequenceKeypoint.new(1, Theme.Purple)
     })
-
-    --// [3] TAMBAHAN: LOADING SCREEN ([logo] [judul/pembuat] -> [kucing lompat] -> [bar loading])
-    local LoadingFrame = Instance.new("Frame")
-    LoadingFrame.Name = "LoadingFrame"
-    LoadingFrame.Size = UDim2.new(0, 360, 0, 195)
-    LoadingFrame.Position = UDim2.new(0.5, -180, 0.5, -97.5)
-    LoadingFrame.BackgroundColor3 = Theme.Background
-    LoadingFrame.Parent = ScreenGui
-
-    local LoadScale = Instance.new("UIScale", LoadingFrame)
-    local function UpdateLoadScale()
-        local viewport = workspace.CurrentCamera.ViewportSize
-        if viewport.X < 500 then
-            LoadScale.Scale = math.clamp(viewport.X / 420, 0.72, 1)
-        else
-            LoadScale.Scale = 1
-        end
-    end
-    UpdateLoadScale()
-    workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateLoadScale)
-
-    Instance.new("UICorner", LoadingFrame).CornerRadius = UDim.new(0, 12)
-
-    local LoadStroke = Instance.new("UIStroke", LoadingFrame)
-    LoadStroke.Thickness = 1.8
-    LoadStroke.Color = Color3.new(1,1,1)
-    local LoadBorderGrad = Instance.new("UIGradient", LoadStroke)
-    LoadBorderGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.Red),
-        ColorSequenceKeypoint.new(1, Theme.Purple)
-    })
-
-    -- [logo] [judul / nama pembuatnya]
-    local LoadHeader = Instance.new("Frame")
-    LoadHeader.Size = UDim2.new(1, -32, 0, 46)
-    LoadHeader.Position = UDim2.new(0, 16, 0, 14)
-    LoadHeader.BackgroundTransparency = 1
-    LoadHeader.Parent = LoadingFrame
-
-    local LoadLogo = Instance.new("ImageLabel")
-    LoadLogo.Size = UDim2.new(0, 42, 0, 42)
-    LoadLogo.Position = UDim2.new(0, 0, 0, 2)
-    LoadLogo.BackgroundColor3 = Theme.Secondary
-    LoadLogo.Image = LogoId
-    LoadLogo.Parent = LoadHeader
-    Instance.new("UICorner", LoadLogo).CornerRadius = UDim.new(1, 0)
-    local LoadLogoStroke = Instance.new("UIStroke", LoadLogo)
-    LoadLogoStroke.Thickness = 1.5
-    LoadLogoStroke.Color = Theme.Red
-
-    local LoadTitle = Instance.new("TextLabel")
-    LoadTitle.Size = UDim2.new(1, -54, 0, 22)
-    LoadTitle.Position = UDim2.new(0, 52, 0, 2)
-    LoadTitle.BackgroundTransparency = 1
-    LoadTitle.Text = TitleText
-    LoadTitle.Font = Enum.Font.GothamBold
-    LoadTitle.TextSize = 15
-    LoadTitle.TextColor3 = Theme.Text
-    LoadTitle.TextXAlignment = Enum.TextXAlignment.Left
-    LoadTitle.Parent = LoadHeader
-
-    local LoadAuthor = Instance.new("TextLabel")
-    LoadAuthor.Size = UDim2.new(1, -54, 0, 18)
-    LoadAuthor.Position = UDim2.new(0, 52, 0, 24)
-    LoadAuthor.BackgroundTransparency = 1
-    LoadAuthor.Text = "by " .. AuthorText
-    LoadAuthor.Font = Enum.Font.Gotham
-    LoadAuthor.TextSize = 12
-    LoadAuthor.TextColor3 = Theme.SubText
-    LoadAuthor.TextXAlignment = Enum.TextXAlignment.Left
-    LoadAuthor.Parent = LoadHeader
-
-    -- [ikon kucing melompat lompat]
-    local CatStage = Instance.new("Frame")
-    CatStage.Size = UDim2.new(1, -32, 0, 62)
-    CatStage.Position = UDim2.new(0, 16, 0, 68)
-    CatStage.BackgroundTransparency = 1
-    CatStage.Parent = LoadingFrame
-
-    local CatIcon = Instance.new("ImageLabel")
-    CatIcon.Name = "JumpingCat"
-    CatIcon.Size = UDim2.new(0, 42, 0, 42)
-    CatIcon.Position = UDim2.new(0.5, -21, 0.5, -16)
-    CatIcon.BackgroundTransparency = 1
-    CatIcon.Image = CatIconId
-    CatIcon.Parent = CatStage
-
-    -- [bar loding]
-    local BarBg = Instance.new("Frame")
-    BarBg.Name = "ProgressBarBg"
-    BarBg.Size = UDim2.new(1, -32, 0, 14)
-    BarBg.Position = UDim2.new(0, 16, 1, -46)
-    BarBg.BackgroundColor3 = Theme.Secondary
-    BarBg.Parent = LoadingFrame
-    Instance.new("UICorner", BarBg).CornerRadius = UDim.new(1, 0)
-    Instance.new("UIStroke", BarBg).Color = Theme.Border
-
-    local BarFill = Instance.new("Frame")
-    BarFill.Name = "ProgressBarFill"
-    BarFill.Size = UDim2.new(0, 0, 1, 0)
-    BarFill.BackgroundColor3 = Color3.new(1, 1, 1)
-    BarFill.Parent = BarBg
-    Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
-
-    local BarGrad = Instance.new("UIGradient", BarFill)
-    BarGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.Red),
-        ColorSequenceKeypoint.new(1, Theme.Purple)
-    })
-
-    local StatusText = Instance.new("TextLabel")
-    StatusText.Size = UDim2.new(1, -32, 0, 16)
-    StatusText.Position = UDim2.new(0, 16, 1, -26)
-    StatusText.BackgroundTransparency = 1
-    StatusText.Text = "Memuat aset... 0%"
-    StatusText.Font = Enum.Font.GothamSemibold
-    StatusText.TextSize = 11
-    StatusText.TextColor3 = Theme.SubText
-    StatusText.Parent = LoadingFrame
-
-    local isLoading = true
-    task.spawn(function()
-        while isLoading do
-            local jumpUp = TweenService:Create(
-                CatIcon,
-                TweenInfo.new(0.24, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                { Position = UDim2.new(0.5, -21, 0.5, -34), Rotation = -12 }
-            )
-            jumpUp:Play()
-            jumpUp.Completed:Wait()
-            if not isLoading then break end
-
-            local jumpDown = TweenService:Create(
-                CatIcon,
-                TweenInfo.new(0.24, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out),
-                { Position = UDim2.new(0.5, -21, 0.5, -14), Rotation = 10 }
-            )
-            jumpDown:Play()
-            jumpDown.Completed:Wait()
-        end
-    end)
-
-    local elapsed = 0
-    while elapsed < LoadDuration do
-        local dt = RunService.RenderStepped:Wait()
-        elapsed += dt
-        local progress = math.clamp(elapsed / LoadDuration, 0, 1)
-        BarFill.Size = UDim2.new(progress, 0, 1, 0)
-        StatusText.Text = string.format("Memuat UI... %d%%", math.floor(progress * 100))
-    end
-
-    BarFill.Size = UDim2.new(1, 0, 1, 0)
-    StatusText.Text = "Selesai! 100%"
-    task.wait(0.2)
-    isLoading = false
-
-    LoadingFrame:Destroy()
-    MainFrame.Visible = true
-    ToggleLogo.Visible = true
 
     -- Toggle Buka/Tutup UI dari Logo
     local UIVisible = true
@@ -380,7 +224,7 @@ function Library:CreateWindow(Config)
     Divider.Size = UDim2.new(1, 0, 0, 2)
     Divider.Position = UDim2.new(0, 0, 1, -2)
     Divider.BorderSizePixel = 0
-    Divider.BackgroundColor3 = Color3.new(1,1,1)
+    Divider.BackgroundColor3 = Color3.new(1, 1, 1)
     Divider.Parent = Header
     local DivGrad = Instance.new("UIGradient", Divider)
     DivGrad.Color = ColorSequence.new({
@@ -597,7 +441,7 @@ function Library:CreateWindow(Config)
                 local Knob = Instance.new("Frame")
                 Knob.Size = UDim2.new(0, 16, 0, 16)
                 Knob.Position = State and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
-                Knob.BackgroundColor3 = Color3.new(1,1,1)
+                Knob.BackgroundColor3 = Color3.new(1, 1, 1)
                 Knob.Parent = SwitchBg
                 Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
 
@@ -1039,6 +883,140 @@ function Library:CreateWindow(Config)
 
         return AttachElements(Page)
     end
+
+    --// LOADING SCREEN ([logo] [judul/nama pembuatnya] | [ikon kucing melompat-lompat] | [bar loading])
+    task.spawn(function()
+        local LoaderFrame = Instance.new("Frame")
+        LoaderFrame.Name = "LoaderFrame"
+        LoaderFrame.Size = UDim2.new(0, 340, 0, 190)
+        LoaderFrame.Position = UDim2.new(0.5, -170, 0.5, -95)
+        LoaderFrame.BackgroundColor3 = Theme.Background
+        LoaderFrame.ClipsDescendants = true
+        LoaderFrame.Parent = ScreenGui
+        Instance.new("UICorner", LoaderFrame).CornerRadius = UDim.new(0, 12)
+
+        local LoaderScale = Instance.new("UIScale", LoaderFrame)
+        local function UpdateLoaderScale()
+            local viewport = workspace.CurrentCamera.ViewportSize
+            if viewport.X < 600 or viewport.Y < 400 then
+                LoaderScale.Scale = math.clamp(viewport.X / 420, 0.7, 1)
+            else
+                LoaderScale.Scale = 1
+            end
+        end
+        UpdateLoaderScale()
+        workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateLoaderScale)
+
+        local LoaderStroke = Instance.new("UIStroke", LoaderFrame)
+        LoaderStroke.Thickness = 2
+        LoaderStroke.Color = Color3.new(1, 1, 1)
+        local LoaderStrokeGrad = Instance.new("UIGradient", LoaderStroke)
+        LoaderStrokeGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.Red),
+            ColorSequenceKeypoint.new(1, Theme.Purple)
+        })
+
+        -- Baris Atas: [Logo] [Judul / Nama Pembuatnya]
+        local LoaderLogo = Instance.new("ImageLabel")
+        LoaderLogo.Size = UDim2.new(0, 40, 0, 40)
+        LoaderLogo.Position = UDim2.new(0, 18, 0, 16)
+        LoaderLogo.BackgroundColor3 = Theme.Secondary
+        LoaderLogo.Image = LogoId
+        LoaderLogo.Parent = LoaderFrame
+        Instance.new("UICorner", LoaderLogo).CornerRadius = UDim.new(1, 0)
+        Instance.new("UIStroke", LoaderLogo).Color = Theme.Purple
+
+        local LoaderTitle = Instance.new("TextLabel")
+        LoaderTitle.Size = UDim2.new(1, -76, 0, 20)
+        LoaderTitle.Position = UDim2.new(0, 66, 0, 16)
+        LoaderTitle.BackgroundTransparency = 1
+        LoaderTitle.Text = TitleText .. " (" .. VersionText .. ")"
+        LoaderTitle.Font = Enum.Font.GothamBold
+        LoaderTitle.TextSize = 14
+        LoaderTitle.TextColor3 = Theme.Text
+        LoaderTitle.TextXAlignment = Enum.TextXAlignment.Left
+        LoaderTitle.TextTruncate = Enum.TextTruncate.AtEnd
+        LoaderTitle.Parent = LoaderFrame
+
+        local LoaderAuthor = Instance.new("TextLabel")
+        LoaderAuthor.Size = UDim2.new(1, -76, 0, 16)
+        LoaderAuthor.Position = UDim2.new(0, 66, 0, 36)
+        LoaderAuthor.BackgroundTransparency = 1
+        LoaderAuthor.Text = "by " .. AuthorText
+        LoaderAuthor.Font = Enum.Font.Gotham
+        LoaderAuthor.TextSize = 12
+        LoaderAuthor.TextColor3 = Theme.SubText
+        LoaderAuthor.TextXAlignment = Enum.TextXAlignment.Left
+        LoaderAuthor.Parent = LoaderFrame
+
+        -- Area Track & Ikon Kucing Melompat-Lompat di Atas Bar Loading
+        local BarTrack = Instance.new("Frame")
+        BarTrack.Size = UDim2.new(1, -36, 0, 12)
+        BarTrack.Position = UDim2.new(0, 18, 0, 132)
+        BarTrack.BackgroundColor3 = Theme.Secondary
+        BarTrack.Parent = LoaderFrame
+        Instance.new("UICorner", BarTrack).CornerRadius = UDim.new(1, 0)
+        Instance.new("UIStroke", BarTrack).Color = Theme.Border
+
+        local BarFill = Instance.new("Frame")
+        BarFill.Size = UDim2.new(0, 0, 1, 0)
+        BarFill.BackgroundColor3 = Color3.new(1, 1, 1)
+        BarFill.Parent = BarTrack
+        Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
+
+        local BarGrad = Instance.new("UIGradient", BarFill)
+        BarGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.Red),
+            ColorSequenceKeypoint.new(1, Theme.Purple)
+        })
+
+        -- Ikon Kucing Melompat-Lompat
+        local CatIcon = Instance.new("ImageLabel")
+        CatIcon.Size = UDim2.new(0, 34, 0, 34)
+        CatIcon.Position = UDim2.new(0, 18, 0, 96)
+        CatIcon.BackgroundTransparency = 1
+        CatIcon.Image = CatIconId
+        CatIcon.ImageColor3 = Theme.Text
+        CatIcon.Parent = LoaderFrame
+
+        local PercentLabel = Instance.new("TextLabel")
+        PercentLabel.Size = UDim2.new(1, -36, 0, 18)
+        PercentLabel.Position = UDim2.new(0, 18, 0, 152)
+        PercentLabel.BackgroundTransparency = 1
+        PercentLabel.Text = "Memuat UI... 0%"
+        PercentLabel.Font = Enum.Font.GothamSemibold
+        PercentLabel.TextSize = 12
+        PercentLabel.TextColor3 = Theme.SubText
+        PercentLabel.Parent = LoaderFrame
+
+        -- Animasi Lompat Kucing + Pengisian Bar Loading Sampai Penuh
+        local elapsed = 0
+        local hoppingConn
+        hoppingConn = RunService.RenderStepped:Connect(function(dt)
+            elapsed += dt
+            local progress = math.clamp(elapsed / LoadTime, 0, 1)
+
+            -- Update Bar Loading
+            BarFill.Size = UDim2.new(progress, 0, 1, 0)
+            PercentLabel.Text = string.format("Memuat UI... %d%%", math.floor(progress * 100))
+
+            -- Gerakan Kucing Melompat-Lompat mengikuti ujung bar
+            local trackStartX = 18
+            local trackWidth = BarTrack.AbsoluteSize.X
+            local catX = trackStartX + (trackWidth * progress) - (CatIcon.AbsoluteSize.X / 2)
+            local hopHeight = math.abs(math.sin(elapsed * 11)) * 16
+            CatIcon.Position = UDim2.new(0, math.clamp(catX, 10, 340 - 44), 0, 96 - hopHeight)
+            CatIcon.Rotation = math.sin(elapsed * 11) * 14
+
+            if progress >= 1 then
+                hoppingConn:Disconnect()
+                task.wait(0.2)
+                LoaderFrame:Destroy()
+                MainFrame.Visible = true
+                ToggleLogo.Visible = true
+            end
+        end)
+    end)
 
     return WindowObj
 end
