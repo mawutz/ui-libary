@@ -861,8 +861,12 @@ function Library:CreateWindow(Config)
                 local SecContent = Instance.new("Frame")
                 SecContent.Size = UDim2.new(1, -12, 0, 0)
                 SecContent.Position = UDim2.new(0, 6, 0, 38)
+                SecContent.AutomaticSize = Enum.AutomaticSize.Y
                 SecContent.BackgroundTransparency = 1
                 SecContent.Parent = SecFrame
+
+                local SecPad = Instance.new("UIPadding", SecContent)
+                SecPad.PaddingBottom = UDim.new(0, 8)
 
                 local SecLayout = Instance.new("UIListLayout", SecContent)
                 SecLayout.Padding = UDim.new(0, 6)
@@ -870,13 +874,15 @@ function Library:CreateWindow(Config)
 
                 local function ResizeSection()
                     if Open then
-                        SecFrame.Size = UDim2.new(1, -6, 0, 44 + SecLayout.AbsoluteContentSize.Y)
+                        local contentHeight = SecLayout.AbsoluteContentSize.Y + 8
+                        SecFrame.Size = UDim2.new(1, -6, 0, 38 + contentHeight)
                     else
                         SecFrame.Size = UDim2.new(1, -6, 0, 36)
                     end
                 end
 
                 SecLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(ResizeSection)
+                task.defer(ResizeSection)
 
                 SecHeader.MouseButton1Click:Connect(function()
                     Open = not Open
